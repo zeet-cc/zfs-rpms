@@ -7,6 +7,17 @@ on:
       - openzfs
       - fedora34
   workflow_dispatch:
+    inputs:
+      zfs-version:
+        required: true
+      kernel-version:
+        required: true
+      kernel-release:
+        required: true
+      kernel-headers-version:
+        required: true
+      kernel-headers-release:
+        required: true
 
 permissions:
   contents: write
@@ -19,24 +30,30 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 2
-      - name: Check OpenZFS trigger
+      - name: Check OpenZFS and Kernel push trigger
+        if: ${{ github.event_name == 'push' }}
         id: trigger-openzfs
         run: |
-          set -x
           if [ $(git diff --name-only HEAD^..HEAD|grep -e ^openzfs$) ]; then
             echo '::set-output name=build::true'
           else
             echo '::set-output name=build::false'
           fi
-      - name: Check Kernel trigger
-        id: trigger-kernel
-        run: |
-          set -x
           if [ $(git diff --name-only HEAD^..HEAD|grep -e ^fedora34$) ]; then
             echo '::set-output name=build::true'
           else
             echo '::set-output name=build::false'
           fi
+      - name: Set OpenZFS and Kernel versions from manual trigger
+        if: ${{ github.event_name == 'workflow_dispatch' }}  
+        run: |
+          echo "ZFS_VERSION=${{ github.event.inputs.zfs-version }}" > ./openzfs
+          echo "KERNEL_VERSION=${{ github.event.inputs.kernel-version }}" > ./fedora34
+          echo "KERNEL_RELEASE=${{ github.event.inputs.kernel-release }}" >> ./fedora34
+          echo "KERNEL_HEADERS_VERSION=${{ github.event.inputs.kernel-headers-version }}" >> ./fedora34
+          echo "KERNEL_HEADERS_RELEASE=${{ github.event.inputs.kernel-headers-release }}" >> ./fedora34
+          echo '::set-output name=build::true'
+          echo '::set-output name=build::true'
       - name: Download OpenZFS source
         run: |
           source ./openzfs
