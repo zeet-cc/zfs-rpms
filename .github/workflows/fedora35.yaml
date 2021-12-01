@@ -90,11 +90,23 @@ jobs:
         run: |
           docker exec -u mockbuild -w /srv/zfs builder make -j1 rpm-kmod
           docker exec -w /srv/zfs builder bash -c "rm -f ./*.src.rpm"
+      - name: Build kernel-zfs RPM
+        if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          source ./openzfs
+          source ./fedora35
+          KERNEL_RELEASE_SHORT=$(echo ${KERNEL_RELEASE}|sed 's/\.fc35//')
+          sed -i "s/ZFS_VERSION/${ZFS_VERSION}/g" kernel-zfs.spec
+          sed -i "s/KERNEL_VERSION/${KERNEL_VERSION}/g" kernel-zfs.spec
+          sed -i "s/KERNEL_RELEASE_SHORT/${KERNEL_RELEASE_SHORT}/g" kernel-zfs.spec
+          docker cp kernel-zfs.spec builder:/home/mockbuild/kernel-zfs.spec
+          docker exec -u mockbuild -w /home/mockbuild builder rpmbuild -bb kernel-zfs.spec
+          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/kernel-zfs-${KERNEL_VERSION}-${KERNEL_RELEASE_SHORT}.openzfs${ZFS_VERSION}.fc35.noarch.rpm /srv/zfs/
       - name: Add kmod release
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           source ./openzfs
           source ./fedora35
-          gh release create -t "OpenZFS ${ZFS_VERSION}: Fedora 35 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-fedora35-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm
+          gh release create -t "OpenZFS ${ZFS_VERSION}: Fedora 35 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-fedora35-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm zfs-${ZFS_VERSION}/kernel-zfs*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
