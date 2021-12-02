@@ -1,6 +1,6 @@
-Name:           kernel-zfs
+Name:           kernel-zfs-ZFS_VERSION
 Version:        KERNEL_VERSION
-Release:        KERNEL_RELEASE_SHORT.openzfsZFS_VERSION%{?dist}
+Release:        KERNEL_RELEASE_SHORT%{?dist}
 BuildArch:      noarch
 
 Summary:        Kernel module(s)
@@ -32,5 +32,5 @@ exit 0
 %files
 
 %changelog
-* Tue Nov 30 2021 Marcin Skarbek <rpm@skarbek.name> KERNEL_VERSION-KERNEL_RELEASE_SHORT.openzfsZFS_VERSION
+* Tue Nov 30 2021 Marcin Skarbek <rpm@skarbek.name> KERNEL_VERSION-KERNEL_RELEASE_SHORT
 - Initial package
