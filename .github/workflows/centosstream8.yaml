@@ -24,7 +24,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: Download OpenZFS source
         run: |
-          source ./openzfs
           curl -sLO https://github.com/openzfs/zfs/releases/download/zfs-${{ github.event.inputs.zfs-version }}/zfs-${{ github.event.inputs.zfs-version }}.tar.gz
           tar xf zfs-${{ github.event.inputs.zfs-version }}.tar.gz
       - name: Pull conainer image
@@ -60,7 +59,6 @@ jobs:
           docker exec -w /srv/zfs builder bash -c "rm -f ./*.src.rpm"
       - name: Build zfs-container RPM
         run: |
-          source ./openzfs
           sed -i "s/ZFS_VERSION/${{ github.event.inputs.zfs-version }}/g" zfs-container.spec
           docker cp zfs-container.spec builder:/home/mockbuild/zfs-container.spec
           docker exec -u mockbuild -w /home/mockbuild builder rpmbuild -bb zfs-container.spec
@@ -76,6 +74,6 @@ jobs:
           docker exec -w /srv/zfs builder bash -c "rm -f ./*.src.rpm"
       - name: Add kmod release
         run: |
-          gh release create -t "OpenZFS ${{ github.event.inputs.zfs-version }}: CentOS Stream 8 ${{ github.event.inputs.kernel-version }}-${{ github.event.inputs.kernel-release }}" --target ${GITHUB_SHA} v${{ github.event.inputs.zfs-version }}-centosstream8-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${{ github.event.inputs.zfs-version }}/kmod*.rpm zfs-${{ github.event.inputs.zfs-version }}/zfs-kmod*.rpm
+          gh release create -t "OpenZFS ${{ github.event.inputs.zfs-version }}: CentOS Stream 8 ${{ github.event.inputs.kernel-version }}-${{ github.event.inputs.kernel-release }}" --target ${GITHUB_SHA} v${{ github.event.inputs.zfs-version }}-centosstream8-${{ github.event.inputs.kernel-version }}-${{ github.event.inputs.kernel-release }} zfs-${{ github.event.inputs.zfs-version }}/kmod*.rpm zfs-${{ github.event.inputs.zfs-version }}/zfs-kmod*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
