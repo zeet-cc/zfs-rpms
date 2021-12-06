@@ -64,7 +64,7 @@ jobs:
           sed -i "s/ZFS_VERSION/${{ github.event.inputs.zfs-version }}/g" zfs-container.spec
           docker cp zfs-container.spec builder:/home/mockbuild/zfs-container.spec
           docker exec -u mockbuild -w /home/mockbuild builder rpmbuild -bb zfs-container.spec
-          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/zfs-container-${{ github.event.inputs.zfs-version }}-1.fc34.noarch.rpm /srv/zfs/
+          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/zfs-container-${{ github.event.inputs.zfs-version }}-1.el8.noarch.rpm /srv/zfs/
       - name: Add utils release
         run: |
           gh release create -t "OpenZFS ${{ github.event.inputs.zfs-version }}: CentOS Stream 8" --target ${GITHUB_SHA} v${{ github.event.inputs.zfs-version }}-centosstream8 zfs-${{ github.event.inputs.zfs-version }}/zfs*.rpm zfs-${{ github.event.inputs.zfs-version }}/lib*.rpm zfs-${{ github.event.inputs.zfs-version }}/python*.rpm
