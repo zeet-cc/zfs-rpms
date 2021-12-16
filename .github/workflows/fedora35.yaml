@@ -1,6 +1,23 @@
 name: Fedora 35
 on:
+  push:
+    branches: 
+      - main
+    paths:
+      - openzfs
+      - fedora34
   workflow_dispatch:
+    inputs:
+      zfs-version:
+        required: true
+      kernel-version:
+        required: true
+      kernel-release:
+        required: true
+      kernel-headers-version:
+        required: true
+      kernel-headers-release:
+        required: true
 
 permissions:
   contents: write
