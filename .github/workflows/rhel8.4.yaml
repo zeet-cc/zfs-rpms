@@ -52,10 +52,10 @@ jobs:
       - name: Register conainer
         run: |
           docker exec builder rm -vf /etc/rhsm-host /etc/pki/entitlement-host /etc/yum.repos.d/ubi.repo
-          docker exec builder subscription-manager register --release=8.4 --org=${RHSN_ORG} --activationkey=${RHSN_KEY} --name=gh-openzfs-builder-8.4
+          docker exec builder subscription-manager register --username=${RHSN_USER} --password=${RHSN_PASS} --name=gh-openzfs-builder-8.4
         env:
-          RHSN_ORG: ${{ secrets.RHSN_ORG }}
-          RHSN_KEY: ${{ secrets.RHSN_KEY }}
+          RHSN_USER: ${{ secrets.RHSN_USER }}
+          RHSN_PASS: ${{ secrets.RHSN_PASS }}
       - name: Update conainer
         run: |
           docker exec builder dnf -qy update
