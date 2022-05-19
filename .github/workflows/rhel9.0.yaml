@@ -110,7 +110,7 @@ jobs:
         run: |
           source ./openzfs
           source ./rhel9.0
-          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 9.0 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel9.0-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm zfs-${ZFS_VERSION}/kernel-zfs*.rpm
+          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 9.0 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel9.0-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Unregister conainer
