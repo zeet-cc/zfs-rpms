@@ -12,8 +12,6 @@ Requires:       zfs = %{version}
 Provides:       zfs-kmod = %{version}
 Conflicts:      zfs-kmod
 Conflicts:      zfs-dkms
-Obsoletes:      kmod-spl
-Obsoletes:      spl-kmod
 
 %description
 This package fakes OpenZFS kernel modules package as installation dependency
