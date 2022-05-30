@@ -115,4 +115,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Unregister conainer
         run: |
-          docker exec builder subscription-manager unregister
+          docker exec -e SMDEV_CONTAINER_OFF=True builder subscription-manager unregister
