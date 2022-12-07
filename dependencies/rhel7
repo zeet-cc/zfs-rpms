@@ -1,1 +1,0 @@
-autoconf automake elfutils-libelf-devel gcc kmod libaio-devel libattr-devel libblkid-devel libffi-devel libtirpc-devel libtool libudev-devel libuuid-devel make ncompress openssl-devel python python-cffi python-setuptools python2-devel rpm-build zlib-devel
