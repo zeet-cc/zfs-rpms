@@ -1,11 +1,11 @@
-name: Fedora 35
+name: Fedora 37
 on:
   push:
     branches: 
       - main
     paths:
       - openzfs
-      - fedora34
+      - fedora37
   workflow_dispatch:
     inputs:
       zfs-version:
@@ -43,7 +43,7 @@ jobs:
         id: trigger-kernel
         run: |
           set -x
-          if [ $(git diff --name-only HEAD^..HEAD|grep -e ^fedora35$) ]; then
+          if [ $(git diff --name-only HEAD^..HEAD|grep -e ^fedora37$) ]; then
             echo '::set-output name=build::true'
           else
             echo '::set-output name=build::false'
@@ -55,23 +55,23 @@ jobs:
           tar xf zfs-${ZFS_VERSION}.tar.gz
       - name: Pull conainer image
         run: |
-          docker pull registry.fedoraproject.org/fedora:35
+          docker pull registry.fedoraproject.org/fedora:37
       - name: Run conainer
         run: |
           source ./openzfs
-          docker run -d -v $(pwd)/zfs-${ZFS_VERSION}:/srv/zfs --name builder registry.fedoraproject.org/fedora:35 sleep 60m
+          docker run -d -v $(pwd)/zfs-${ZFS_VERSION}:/srv/zfs --name builder registry.fedoraproject.org/fedora:37 sleep 60m
       - name: Update conainer
         run: |
           docker exec builder dnf -qy update
       - name: Install kernel
         run: |
-          source ./fedora35
+          source ./fedora37
           docker exec builder dnf -y install\
            https://kojipkgs.fedoraproject.org//packages/kernel/${KERNEL_VERSION}/${KERNEL_RELEASE}/x86_64/kernel-devel-${KERNEL_VERSION}-${KERNEL_RELEASE}.x86_64.rpm\
            https://kojipkgs.fedoraproject.org//packages/kernel-headers/${KERNEL_HEADERS_VERSION}/${KERNEL_HEADERS_RELEASE}/x86_64/kernel-headers-${KERNEL_HEADERS_VERSION}-${KERNEL_HEADERS_RELEASE}.x86_64.rpm
       - name: Install build dependencies
         run: |
-          docker exec builder dnf -y install $(cat dependencies/fedora35)
+          docker exec builder dnf -y install $(cat dependencies/fedora37)
       - name: Add build user
         run: |
           docker exec builder useradd mockbuild
@@ -93,13 +93,13 @@ jobs:
           sed -i "s/ZFS_VERSION/${ZFS_VERSION}/g" zfs-container.spec
           docker cp zfs-container.spec builder:/home/mockbuild/zfs-container.spec
           docker exec -u mockbuild -w /home/mockbuild builder rpmbuild -bb zfs-container.spec
-          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/zfs-container-${ZFS_VERSION}-1.fc35.noarch.rpm /srv/zfs/
+          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/zfs-container-${ZFS_VERSION}-1.fc37.noarch.rpm /srv/zfs/
       - name: Add utils release
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           source ./openzfs
-          source ./fedora35
-          gh release create -t "OpenZFS ${ZFS_VERSION}: Fedora 35" --target ${GITHUB_SHA} v${ZFS_VERSION}-fedora35 zfs-${ZFS_VERSION}/zfs*.rpm zfs-${ZFS_VERSION}/lib*.rpm zfs-${ZFS_VERSION}/python*.rpm
+          source ./fedora37
+          gh release create -t "OpenZFS ${ZFS_VERSION}: Fedora 37" --target ${GITHUB_SHA} v${ZFS_VERSION}-fedora37 zfs-${ZFS_VERSION}/zfs*.rpm zfs-${ZFS_VERSION}/lib*.rpm zfs-${ZFS_VERSION}/python*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build kmod RPMs
@@ -111,19 +111,19 @@ jobs:
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           source ./openzfs
-          source ./fedora35
-          KERNEL_RELEASE_SHORT=$(echo ${KERNEL_RELEASE}|sed 's/\.fc35//')
+          source ./fedora37
+          KERNEL_RELEASE_SHORT=$(echo ${KERNEL_RELEASE}|sed 's/\.fc37//')
           sed -i "s/ZFS_VERSION/${ZFS_VERSION}/g" kernel-zfs.spec
           sed -i "s/KERNEL_VERSION/${KERNEL_VERSION}/g" kernel-zfs.spec
           sed -i "s/KERNEL_RELEASE_SHORT/${KERNEL_RELEASE_SHORT}/g" kernel-zfs.spec
           docker cp kernel-zfs.spec builder:/home/mockbuild/kernel-zfs.spec
           docker exec -u mockbuild -w /home/mockbuild builder rpmbuild -bb kernel-zfs.spec
-          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/kernel-zfs-${ZFS_VERSION}-${KERNEL_VERSION}-${KERNEL_RELEASE_SHORT}.fc35.noarch.rpm /srv/zfs/
+          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/kernel-zfs-${ZFS_VERSION}-${KERNEL_VERSION}-${KERNEL_RELEASE_SHORT}.fc37.noarch.rpm /srv/zfs/
       - name: Add kmod release
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           source ./openzfs
-          source ./fedora35
-          gh release create -t "OpenZFS ${ZFS_VERSION}: Fedora 35 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-fedora35-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm zfs-${ZFS_VERSION}/kernel-zfs*.rpm
+          source ./fedora37
+          gh release create -t "OpenZFS ${ZFS_VERSION}: Fedora 37 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-fedora37-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm zfs-${ZFS_VERSION}/kernel-zfs*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
