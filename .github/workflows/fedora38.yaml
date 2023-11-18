@@ -67,8 +67,8 @@ jobs:
         run: |
           source ./fedora38
           docker exec builder dnf -y install\
-           https://kojipkgs.fedoraproject.org//packages/kernel/${KERNEL_VERSION}/${KERNEL_RELEASE}/x86_64/kernel-devel-${KERNEL_VERSION}-${KERNEL_RELEASE}.x86_64.rpm\
-           https://kojipkgs.fedoraproject.org//packages/kernel-headers/${KERNEL_HEADERS_VERSION}/${KERNEL_HEADERS_RELEASE}/x86_64/kernel-headers-${KERNEL_HEADERS_VERSION}-${KERNEL_HEADERS_RELEASE}.x86_64.rpm
+           https://kojipkgs.fedoraproject.org/packages/kernel/${KERNEL_VERSION}/${KERNEL_RELEASE}/x86_64/kernel-devel-${KERNEL_VERSION}-${KERNEL_RELEASE}.x86_64.rpm\
+           https://kojipkgs.fedoraproject.org/packages/kernel-headers/${KERNEL_HEADERS_VERSION}/${KERNEL_HEADERS_RELEASE}/x86_64/kernel-headers-${KERNEL_HEADERS_VERSION}-${KERNEL_HEADERS_RELEASE}.x86_64.rpm
       - name: Install build dependencies
         run: |
           docker exec builder dnf -y install $(cat dependencies/fedora38)
@@ -80,7 +80,7 @@ jobs:
           docker exec builder chown -R mockbuild:mockbuild /srv/zfs
       - name: Configure OpenZFS
         run: |
-          docker exec -u mockbuild -w /srv/zfs builder ./configure --disable-python
+          docker exec -u mockbuild -w /srv/zfs builder ./configure
       - name: Build utils RPMs
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run:  |
@@ -105,6 +105,8 @@ jobs:
       - name: Build kmod RPMs
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
+          source ./openzfs
+          source ./fedora38
           docker exec -u mockbuild -w /srv/zfs builder make -j1 rpm-kmod
           docker exec -w /srv/zfs builder bash -c "rm -f ./*.src.rpm"
       - name: Build kernel-zfs RPM
