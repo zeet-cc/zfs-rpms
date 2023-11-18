@@ -123,7 +123,7 @@ jobs:
           sed -i "s/KERNEL_RELEASE_SHORT/${KERNEL_RELEASE_SHORT}/g" kernel-zfs.spec
           docker cp kernel-zfs.spec builder:/home/mockbuild/kernel-zfs.spec
           docker exec -u mockbuild -w /home/mockbuild builder rpmbuild -bb kernel-zfs.spec
-          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/kernel-zfs-${ZFS_VERSION}-${KERNEL_VERSION}-${KERNEL_RELEASE_SHORT}.el9_2.noarch.rpm /srv/zfs/
+          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/kernel-zfs-${ZFS_VERSION}-${KERNEL_VERSION}-${KERNEL_RELEASE_SHORT}.el9.noarch.rpm /srv/zfs/
       - name: Add kmod release
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
