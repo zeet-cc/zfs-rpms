@@ -11,11 +11,10 @@ URL:            https://github.com/openzfs/zfs
 Requires:       zfs-kmod = ZFS_VERSION
 Requires:       kernel-core = %{version}
 Conflicts:      kernel-core > %{version}
-Conflicts:      kernel-headers > %{version}
 Conflicts:      zfs-dkms
 
 %description
-Meta package that prevents Kernel updates without corresponding OpenZFS kmod package.
+Meta package that prevents Kernel upgrades without corresponding OpenZFS kmod package.
 
 %prep
 exit 0
