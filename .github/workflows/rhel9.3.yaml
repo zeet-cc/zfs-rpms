@@ -1,11 +1,11 @@
-name: RHEL 9.2
+name: RHEL 9.3
 on:
   push:
     branches: 
       - main
     paths:
       - openzfs
-      - rhel9.2
+      - rhel9.3
   workflow_dispatch:
     inputs:
       zfs-version:
@@ -39,7 +39,7 @@ jobs:
         id: trigger-kernel
         run: |
           set -x
-          if [ $(git diff --name-only HEAD^..HEAD|grep -e ^rhel9.2$) ]; then
+          if [ $(git diff --name-only HEAD^..HEAD|grep -e ^rhel9.3$) ]; then
             echo '::set-output name=build::true'
           else
             echo '::set-output name=build::false'
@@ -51,15 +51,15 @@ jobs:
           tar xf zfs-${ZFS_VERSION}.tar.gz
       - name: Pull conainer image
         run: |
-          docker pull registry.access.redhat.com/ubi9/ubi:9.2
+          docker pull registry.access.redhat.com/ubi9/ubi:9.3
       - name: Run conainer
         run: |
           source ./openzfs
-          docker run -d -v $(pwd)/zfs-${ZFS_VERSION}:/srv/zfs --name builder registry.access.redhat.com/ubi9/ubi:9.2 sleep 60m
+          docker run -d -v $(pwd)/zfs-${ZFS_VERSION}:/srv/zfs --name builder registry.access.redhat.com/ubi9/ubi:9.3 sleep 60m
       - name: Register conainer
         run: |
           docker exec builder rm -vf /etc/rhsm-host /etc/pki/entitlement-host /etc/yum.repos.d/ubi.repo
-          docker exec -e SMDEV_CONTAINER_OFF=True builder subscription-manager register --username=${RHSN_USER} --password=${RHSN_PASS} --name=gh-openzfs-builder-9.2
+          docker exec -e SMDEV_CONTAINER_OFF=True builder subscription-manager register --username=${RHSN_USER} --password=${RHSN_PASS} --name=gh-openzfs-builder-9.3
           docker exec builder sed -i 's/sslcacert.*/sslcacert = \/etc\/rhsm\/ca\/redhat-uep\.pem/g' /etc/yum.repos.d/redhat.repo
         env:
           RHSN_USER: ${{ secrets.RHSN_USER }}
@@ -69,7 +69,7 @@ jobs:
           docker exec builder dnf -qy --disableplugin=subscription-manager update
       - name: Install kernel
         run: |
-          source ./rhel9.2
+          source ./rhel9.3
           docker exec builder dnf -y --disableplugin=subscription-manager install kernel-abi-stablelists-${KERNEL_VERSION}-${KERNEL_RELEASE} kernel-devel-${KERNEL_VERSION}-${KERNEL_RELEASE} kernel-headers-${KERNEL_VERSION}-${KERNEL_RELEASE}
       - name: Install build dependencies
         run: |
@@ -101,35 +101,35 @@ jobs:
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           source ./openzfs
-          source ./rhel9.2
-          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 9.2" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel9.2 zfs-${ZFS_VERSION}/zfs*.rpm zfs-${ZFS_VERSION}/lib*.rpm zfs-${ZFS_VERSION}/python*.rpm
+          source ./rhel9.3
+          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 9.3" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel9.3 zfs-${ZFS_VERSION}/zfs*.rpm zfs-${ZFS_VERSION}/lib*.rpm zfs-${ZFS_VERSION}/python*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build kmod RPMs
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           source ./openzfs
-          source ./rhel9.2
+          source ./rhel9.3
           docker exec -u mockbuild -w /srv/zfs builder make -j1 rpm-kmod
           docker exec -w /srv/zfs builder bash -c "rm -f ./*.src.rpm"
       - name: Build kernel-zfs RPM
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           source ./openzfs
-          source ./rhel9.2
-          KERNEL_RELEASE_SHORT=$(echo ${KERNEL_RELEASE}|sed 's/\.el9_2//')
+          source ./rhel9.3
+          KERNEL_RELEASE_SHORT=$(echo ${KERNEL_RELEASE}|sed 's/\.el9_3//')
           sed -i "s/ZFS_VERSION/${ZFS_VERSION}/g" kernel-zfs.spec
           sed -i "s/KERNEL_VERSION/${KERNEL_VERSION}/g" kernel-zfs.spec
           sed -i "s/KERNEL_RELEASE_SHORT/${KERNEL_RELEASE_SHORT}/g" kernel-zfs.spec
           docker cp kernel-zfs.spec builder:/home/mockbuild/kernel-zfs.spec
           docker exec -u mockbuild -w /home/mockbuild builder rpmbuild -bb kernel-zfs.spec
-          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/kernel-zfs-${ZFS_VERSION}-${KERNEL_VERSION}-${KERNEL_RELEASE_SHORT}.el9_2.noarch.rpm /srv/zfs/
+          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/kernel-zfs-${ZFS_VERSION}-${KERNEL_VERSION}-${KERNEL_RELEASE_SHORT}.el9_3.noarch.rpm /srv/zfs/
       - name: Add kmod release
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           source ./openzfs
-          source ./rhel9.2
-          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 9.2 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel9.2-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm zfs-${ZFS_VERSION}/kernel-zfs*.rpm
+          source ./rhel9.3
+          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 9.3 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel9.3-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm zfs-${ZFS_VERSION}/kernel-zfs*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Unregister conainer
