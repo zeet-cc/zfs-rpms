@@ -59,11 +59,11 @@ jobs:
       - name: Register conainer
         run: |
           docker exec builder rm -vf /etc/rhsm-host /etc/pki/entitlement-host /etc/yum.repos.d/ubi.repo
-          docker exec -e SMDEV_CONTAINER_OFF=True builder subscription-manager register --username=${RHSN_USER} --password=${RHSN_PASS} --name=gh-openzfs-builder-9.4
+          docker exec -e SMDEV_CONTAINER_OFF=True builder subscription-manager register --org=${RHSN_ORG} --activationkey=${RHSN_KEY} --name=gh-openzfs-builder-9.4
           docker exec builder sed -i 's/sslcacert.*/sslcacert = \/etc\/rhsm\/ca\/redhat-uep\.pem/g' /etc/yum.repos.d/redhat.repo
         env:
-          RHSN_USER: ${{ secrets.RHSN_USER }}
-          RHSN_PASS: ${{ secrets.RHSN_PASS }}
+          RHSN_ORG: ${{ secrets.RHSN_ORG }}
+          RHSN_KEY: ${{ secrets.RHSN_KEY }}
       - name: Update conainer
         run: |
           docker exec builder dnf -qy --disableplugin=subscription-manager update
