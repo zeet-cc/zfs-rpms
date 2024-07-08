@@ -1,11 +1,11 @@
-name: RHEL 8.8
+name: RHEL 8.10
 on:
   push:
     branches: 
       - main
     paths:
       - openzfs
-      - rhel8.8
+      - rhel8.10
   workflow_dispatch:
 
 permissions:
@@ -32,7 +32,7 @@ jobs:
         id: trigger-kernel
         run: |
           set -x
-          if [ $(git diff --name-only HEAD^..HEAD|grep -e ^rhel8.8$) ]; then
+          if [ $(git diff --name-only HEAD^..HEAD|grep -e ^rhel8.10$) ]; then
             echo '::set-output name=build::true'
           else
             echo '::set-output name=build::false'
@@ -44,15 +44,15 @@ jobs:
           tar xf zfs-${ZFS_VERSION}.tar.gz
       - name: Pull conainer image
         run: |
-          docker pull registry.access.redhat.com/ubi8/ubi:8.8
+          docker pull registry.access.redhat.com/ubi8/ubi:8.10
       - name: Run conainer
         run: |
           source ./openzfs
-          docker run -d -v $(pwd)/zfs-${ZFS_VERSION}:/srv/zfs --name builder registry.access.redhat.com/ubi8/ubi:8.8 sleep 60m
+          docker run -d -v $(pwd)/zfs-${ZFS_VERSION}:/srv/zfs --name builder registry.access.redhat.com/ubi8/ubi:8.10 sleep 60m
       - name: Register conainer
         run: |
           docker exec builder rm -vf /etc/rhsm-host /etc/pki/entitlement-host /etc/yum.repos.d/ubi.repo
-          docker exec builder subscription-manager register --username=${RHSN_USER} --password=${RHSN_PASS} --name=gh-openzfs-builder-8.8
+          docker exec builder subscription-manager register --username=${RHSN_USER} --password=${RHSN_PASS} --name=gh-openzfs-builder-8.10
         env:
           RHSN_USER: ${{ secrets.RHSN_USER }}
           RHSN_PASS: ${{ secrets.RHSN_PASS }}
@@ -61,7 +61,7 @@ jobs:
           docker exec builder dnf -qy update
       - name: Install kernel
         run: |
-          source ./rhel8.8
+          source ./rhel8.10
           docker exec builder dnf -y install kernel-abi-stablelists-${KERNEL_VERSION}-${KERNEL_RELEASE} kernel-devel-${KERNEL_VERSION}-${KERNEL_RELEASE} kernel-headers-${KERNEL_VERSION}-${KERNEL_RELEASE}
       - name: Install build dependencies
         run: |
@@ -92,8 +92,8 @@ jobs:
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           source ./openzfs
-          source ./rhel8.8
-          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 8.8" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel8.8 zfs-${ZFS_VERSION}/zfs*.rpm zfs-${ZFS_VERSION}/lib*.rpm zfs-${ZFS_VERSION}/python*.rpm
+          source ./rhel8.10
+          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 8.10" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel8.10 zfs-${ZFS_VERSION}/zfs*.rpm zfs-${ZFS_VERSION}/lib*.rpm zfs-${ZFS_VERSION}/python*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build kmod RPMs
@@ -105,8 +105,8 @@ jobs:
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           source ./openzfs
-          source ./rhel8.8
-          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 8.8 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel8.8-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm
+          source ./rhel8.10
+          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 8.10 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel8.10-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Unregister conainer
