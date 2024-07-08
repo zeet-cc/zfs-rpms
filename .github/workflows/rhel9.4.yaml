@@ -117,7 +117,7 @@ jobs:
         run: |
           source ./openzfs
           source ./rhel9.4
-          KERNEL_RELEASE_SHORT=$(echo ${KERNEL_RELEASE}|sed 's/\.el9_2//')
+          KERNEL_RELEASE_SHORT=$(echo ${KERNEL_RELEASE}|sed 's/\.el9_4//')
           sed -i "s/ZFS_VERSION/${ZFS_VERSION}/g" kernel-zfs.spec
           sed -i "s/KERNEL_VERSION/${KERNEL_VERSION}/g" kernel-zfs.spec
           sed -i "s/KERNEL_RELEASE_SHORT/${KERNEL_RELEASE_SHORT}/g" kernel-zfs.spec

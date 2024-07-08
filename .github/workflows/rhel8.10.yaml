@@ -7,6 +7,13 @@ on:
       - openzfs
       - rhel8.10
   workflow_dispatch:
+    inputs:
+      zfs-version:
+        required: true
+      kernel-version:
+        required: true
+      kernel-release:
+        required: true
 
 permissions:
   contents: write
@@ -52,20 +59,21 @@ jobs:
       - name: Register conainer
         run: |
           docker exec builder rm -vf /etc/rhsm-host /etc/pki/entitlement-host /etc/yum.repos.d/ubi.repo
-          docker exec builder subscription-manager register --username=${RHSN_USER} --password=${RHSN_PASS} --name=gh-openzfs-builder-8.10
+          docker exec -e SMDEV_CONTAINER_OFF=True builder subscription-manager register --org=${RHSN_ORG} --activationkey=${RHSN_KEY} --name=gh-openzfs-builder-8.10
+          docker exec builder sed -i 's/sslcacert.*/sslcacert = \/etc\/rhsm\/ca\/redhat-uep\.pem/g' /etc/yum.repos.d/redhat.repo
         env:
-          RHSN_USER: ${{ secrets.RHSN_USER }}
-          RHSN_PASS: ${{ secrets.RHSN_PASS }}
+          RHSN_ORG: ${{ secrets.RHSN_ORG }}
+          RHSN_KEY: ${{ secrets.RHSN_KEY }}
       - name: Update conainer
         run: |
-          docker exec builder dnf -qy update
+          docker exec builder dnf -qy --disableplugin=subscription-manager update
       - name: Install kernel
         run: |
           source ./rhel8.10
-          docker exec builder dnf -y install kernel-abi-stablelists-${KERNEL_VERSION}-${KERNEL_RELEASE} kernel-devel-${KERNEL_VERSION}-${KERNEL_RELEASE} kernel-headers-${KERNEL_VERSION}-${KERNEL_RELEASE}
+          docker exec builder dnf -y --disableplugin=subscription-manager install kernel-abi-stablelists-${KERNEL_VERSION}-${KERNEL_RELEASE} kernel-devel-${KERNEL_VERSION}-${KERNEL_RELEASE} kernel-headers-${KERNEL_VERSION}-${KERNEL_RELEASE}
       - name: Install build dependencies
         run: |
-          docker exec builder dnf -y --enablerepo=codeready-builder-for-rhel-8-x86_64-rpms install $(cat dependencies/rhel8)
+          docker exec builder dnf -y --disableplugin=subscription-manager --enablerepo=codeready-builder-for-rhel-8-x86_64-rpms install $(cat dependencies/rhel8)
       - name: Add build user
         run: |
           docker exec builder useradd mockbuild
@@ -74,7 +82,7 @@ jobs:
           docker exec builder chown -R mockbuild:mockbuild /srv/zfs
       - name: Configure OpenZFS
         run: |
-          docker exec -u mockbuild -w /srv/zfs builder ./configure --with-spec=redhat
+          docker exec -u mockbuild -w /srv/zfs builder ./configure
       - name: Build utils RPMs
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run:  |
@@ -99,16 +107,30 @@ jobs:
       - name: Build kmod RPMs
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
+          source ./openzfs
+          source ./rhel8.10
           docker exec -u mockbuild -w /srv/zfs builder make -j1 rpm-kmod
           docker exec -w /srv/zfs builder bash -c "rm -f ./*.src.rpm"
-      - name: Add kmod release
+      - name: Build kernel-zfs RPM
         if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           source ./openzfs
           source ./rhel8.10
-          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 8.10 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel8.10-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm
+          KERNEL_RELEASE_SHORT=$(echo ${KERNEL_RELEASE}|sed 's/\.el8_10//')
+          sed -i "s/ZFS_VERSION/${ZFS_VERSION}/g" kernel-zfs.spec
+          sed -i "s/KERNEL_VERSION/${KERNEL_VERSION}/g" kernel-zfs.spec
+          sed -i "s/KERNEL_RELEASE_SHORT/${KERNEL_RELEASE_SHORT}/g" kernel-zfs.spec
+          docker cp kernel-zfs.spec builder:/home/mockbuild/kernel-zfs.spec
+          docker exec -u mockbuild -w /home/mockbuild builder rpmbuild -bb kernel-zfs.spec
+          docker exec -u mockbuild -w /home/mockbuild builder mv ./rpmbuild/RPMS/noarch/kernel-zfs-${ZFS_VERSION}-${KERNEL_VERSION}-${KERNEL_RELEASE_SHORT}.el8.noarch.rpm /srv/zfs/
+          - name: Add kmod release
+        if: ${{ steps.trigger-openzfs.outputs.build  == 'true' || steps.trigger-kernel.outputs.build  == 'true' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          source ./openzfs
+          source ./rhel8.10
+          gh release create -t "OpenZFS ${ZFS_VERSION}: RHEL 8.10 ${KERNEL_VERSION}-${KERNEL_RELEASE}" --target ${GITHUB_SHA} v${ZFS_VERSION}-rhel8.10-${KERNEL_VERSION}-${KERNEL_RELEASE} zfs-${ZFS_VERSION}/kmod*.rpm zfs-${ZFS_VERSION}/zfs-kmod*.rpm zfs-${ZFS_VERSION}/kernel-zfs*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Unregister conainer
         run: |
-          docker exec builder subscription-manager unregister
+          docker exec -e SMDEV_CONTAINER_OFF=True builder subscription-manager unregister
