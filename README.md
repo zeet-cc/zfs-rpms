@@ -1,11 +1,9 @@
 # OpenZFS RPM kmod packages
 
 OpenZFS RPM kmod packages for:
-    - Fedora 35
-    - Fedora 36
-    - CentOS Stream 8
+    - Fedora 40
+    - Fedora Rawhide
     - CentOS Stream 9
-    - RHEL 7.9
-    - RHEL 8.5
-    - RHEL 8.6
-    - RHEL 9.0
+    - CentOS Stream 10
+    - RHEL 8
+    - RHEL 9
