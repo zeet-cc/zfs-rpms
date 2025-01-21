@@ -1,0 +1,26 @@
+---
+name: OpenZFS utils packages
+permissions:
+  contents: write
+on:
+  push:
+    branches: 
+      - main
+jobs:
+  build:
+    name: Build RPMs
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os:
+          - fedora-40
+          - fedora-41
+          - fedora-rawhide
+          - centos-9
+          - centos-10
+          - rhel-8
+          - rhel-9
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
